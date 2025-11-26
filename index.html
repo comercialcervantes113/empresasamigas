@@ -8,7 +8,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Color Thief (Para extraer colores de las imágenes) -->
+    <!-- Color Thief (Para extraer colores) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
     
     <!-- React & ReactDOM -->
@@ -45,7 +45,7 @@
             transform-origin: center;
         }
 
-        /* CLASES ACTIVAS (Se aplican via React state para color dinámico) */
+        /* CLASES ACTIVAS (Hover) */
         .list-row.is-hovered {
             transform: scale(1.025);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
@@ -74,46 +74,60 @@
             color: rgba(255,255,255,0.9) !important;
         }
 
-        /* MARCA DE AGUA (LOGO FONDO) */
+        /* --- MARCA DE AGUA INTELIGENTE (WATERMARK) --- */
         .watermark-container {
             position: absolute;
-            right: -5%;
+            left: -2%; /* POSICIÓN: Al principio */
             top: 50%;
             transform: translateY(-50%);
-            height: 160%;
+            height: 180%; /* Bien grande */
             width: auto;
             pointer-events: none;
-            opacity: 0.06;
             z-index: 0;
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: all 0.4s ease;
+            justify-content: flex-start;
+            transition: all 0.5s ease;
+            opacity: 0.1; /* Opacidad base sutil */
         }
         
         .watermark-logo {
-            font-size: 8rem;
+            font-size: 10rem;
             font-weight: 900;
             color: #000;
+            opacity: 0.5;
         }
         
+        /* TRUCO DE FUSIÓN PARA IMÁGENES (Blending) */
         .watermark-img {
             height: 100%;
             width: auto;
             object-fit: contain;
-            filter: grayscale(100%);
+            
+            /* Estado Normal (Fondo Blanco): 
+               Multiply hace transparente el blanco de la imagen */
+            filter: grayscale(100%) contrast(1.2);
+            mix-blend-mode: multiply; 
+            transition: all 0.4s ease;
         }
 
-        /* Watermark en Hover */
+        /* Watermark en Hover (Fondo Azul Oscuro) */
         .list-row.is-hovered .watermark-container {
-            opacity: 0.15;
-            right: 2%; /* Ligero movimiento */
+            opacity: 0.25; /* Un poco más visible al pasar el mouse */
+            left: 0%; /* Pequeño movimiento */
         }
+        
         .list-row.is-hovered .watermark-logo {
-            color: white;
+            color: white; /* Texto cambia a blanco */
         }
+
         .list-row.is-hovered .watermark-img {
-            filter: grayscale(100%) brightness(0) invert(1); /* Se vuelve blanca */
+            /* Truco para Hover Oscuro:
+               1. Invertimos colores (Fondo blanco -> Fondo negro)
+               2. Screen hace transparente el negro
+               Resultado: Logo blanco sin recuadro */
+            filter: grayscale(100%) invert(1) contrast(1.3);
+            mix-blend-mode: screen;
         }
 
         .row-content {
@@ -133,6 +147,7 @@
             border-color: #bbf7d0 !important;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        /* Forzar colores internos del beneficio */
         .list-row.is-hovered .benefit-box .benefit-title { color: #15803d !important; }
         .list-row.is-hovered .benefit-box .benefit-value { color: #14532d !important; }
         .list-row.is-hovered .benefit-box svg { color: #16a34a !important; }
