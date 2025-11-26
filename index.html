@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Empresas Amigas - Institución Cervantes</title>
     
-    <!-- Tailwind CSS (Diseño) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Color Thief (Para extraer colores de las imágenes) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -20,7 +23,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* Fondo Vidrio para el contenedor principal */
         .glass-panel {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
@@ -33,76 +35,113 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        /* Estilos de la Lista (Row) */
+        /* Estilos Base de la Fila */
         .list-row {
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             background: white;
             border-left: 4px solid transparent;
+            position: relative;
+            overflow: hidden;
+            transform-origin: center;
         }
 
-        .list-row:hover {
-            transform: translateX(4px);
-            border-left-color: #00529b; /* Azul Cervantes */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            z-index: 10;
+        /* CLASES ACTIVAS (Se aplican via React state para color dinámico) */
+        .list-row.is-hovered {
+            transform: scale(1.025);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+            z-index: 20;
+            border-left-color: rgba(255,255,255,0.5);
         }
 
-        /* Marca de agua del logo en el fondo */
+        /* Textos a Blanco en Hover */
+        .list-row.is-hovered h3, 
+        .list-row.is-hovered p.description-text,
+        .list-row.is-hovered div.font-mono {
+            color: white !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Badge Categoría en Hover */
+        .list-row.is-hovered .category-badge {
+            background-color: rgba(255,255,255,0.2) !important;
+            color: white !important;
+            border-color: rgba(255,255,255,0.3) !important;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Iconos Generales en Hover */
+        .list-row.is-hovered .icon-main {
+            color: rgba(255,255,255,0.9) !important;
+        }
+
+        /* MARCA DE AGUA (LOGO FONDO) */
         .watermark-container {
             position: absolute;
-            right: 0;
+            right: -5%;
             top: 50%;
             transform: translateY(-50%);
-            height: 100%;
-            width: 40%;
-            overflow: hidden;
+            height: 160%;
+            width: auto;
             pointer-events: none;
-            opacity: 0.05; /* Muy sutil */
+            opacity: 0.06;
+            z-index: 0;
             display: flex;
             align-items: center;
-            justify-content: flex-end;
-            padding-right: 2rem;
-            z-index: 0;
+            justify-content: center;
+            transition: all 0.4s ease;
         }
         
         .watermark-logo {
             font-size: 8rem;
             font-weight: 900;
             color: #000;
-            white-space: nowrap;
         }
         
         .watermark-img {
-            height: 140%;
+            height: 100%;
             width: auto;
             object-fit: contain;
             filter: grayscale(100%);
         }
 
-        /* Contenido sobre la marca de agua */
+        /* Watermark en Hover */
+        .list-row.is-hovered .watermark-container {
+            opacity: 0.15;
+            right: 2%; /* Ligero movimiento */
+        }
+        .list-row.is-hovered .watermark-logo {
+            color: white;
+        }
+        .list-row.is-hovered .watermark-img {
+            filter: grayscale(100%) brightness(0) invert(1); /* Se vuelve blanca */
+        }
+
         .row-content {
             position: relative;
             z-index: 1;
         }
 
-        /* Badge de Categoría */
         .category-badge {
             background-color: #eff6ff;
             color: #1e40af;
             border: 1px solid #dbeafe;
         }
-        
-        .list-row:hover .category-badge {
-            background-color: #00529b;
-            color: white;
-            border-color: #00529b;
+
+        /* BENEFIT BOX - Estático */
+        .list-row.is-hovered .benefit-box {
+            background: linear-gradient(to right, #f0fdf4, #ecfdf5) !important;
+            border-color: #bbf7d0 !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        .list-row.is-hovered .benefit-box .benefit-title { color: #15803d !important; }
+        .list-row.is-hovered .benefit-box .benefit-value { color: #14532d !important; }
+        .list-row.is-hovered .benefit-box svg { color: #16a34a !important; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
     <div id="root"></div>
 
-    <!-- 1. CONFIGURACIÓN FIREBASE -->
+    <!-- FIREBASE CONFIG -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
@@ -118,21 +157,18 @@
             measurementId: "G-8X73ZBZGYX"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
 
         window.db = db;
         window.dbFunctions = { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy };
-        
         window.dispatchEvent(new Event('firebase-ready'));
-        console.log("Firebase inicializado correctamente");
     </script>
 
-    <!-- 2. LÓGICA REACT -->
+    <!-- REACT APP -->
     <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+        const { useState, useMemo, useEffect, useRef } = React;
 
         // --- ICONOS ---
         const IconSearch = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
@@ -367,14 +403,21 @@
 
 
         // --- COMPONENTE AVATAR (Usado como watermark o pequeño) ---
-        const LogoAvatar = ({ name, url, isWatermark = false }) => {
+        const LogoAvatar = ({ name, url, isWatermark = false, onLoad }) => {
           if (url) {
             if (isWatermark) {
-                return <img src={url} alt={name} className="watermark-img opacity-20" />;
+                // Si es watermark, NO cargamos ColorThief aquí directamente para no saturar
+                return <img src={url} alt={name} className="watermark-img" crossOrigin="anonymous" />;
             }
             return (
               <div className="w-12 h-12 rounded-full overflow-hidden shadow-sm shrink-0 border border-white bg-white flex items-center justify-center">
-                <img src={url} alt={name} className="w-full h-full object-cover" />
+                <img 
+                    src={url} 
+                    alt={name} 
+                    className="w-full h-full object-cover" 
+                    crossOrigin="anonymous"
+                    onLoad={(e) => onLoad && onLoad(e.target)}
+                />
               </div>
             );
           }
@@ -406,6 +449,119 @@
               {initials}
             </div>
           );
+        };
+
+        // --- COMPONENTE DE FILA INDIVIDUAL (Para manejar su propio estado de color) ---
+        const CompanyRow = ({ empresa, index, handleEdit, handleDelete }) => {
+            const [isHovered, setIsHovered] = useState(false);
+            const [dominantColor, setDominantColor] = useState(null);
+            const colorThiefRef = useRef(null);
+
+            // Inicializar ColorThief una vez
+            useEffect(() => {
+                if (!colorThiefRef.current && window.ColorThief) {
+                    colorThiefRef.current = new window.ColorThief();
+                }
+            }, []);
+
+            // Handler cuando la imagen carga para extraer color
+            const handleImageLoad = (imgElement) => {
+                try {
+                    if (colorThiefRef.current) {
+                        const color = colorThiefRef.current.getColor(imgElement);
+                        // Convertir a string rgb
+                        const rgbColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                        setDominantColor(rgbColor);
+                    }
+                } catch (e) {
+                    console.log("No se pudo extraer color (CORS o error):", e);
+                    // Fallback: null (usará azul por defecto)
+                }
+            };
+
+            // Estilo dinámico para el hover
+            const rowStyle = isHovered 
+                ? {
+                    background: dominantColor 
+                        ? `linear-gradient(135deg, ${dominantColor} 0%, rgba(0,0,0,0.8) 100%)`
+                        : 'linear-gradient(135deg, #00529b 0%, #002a50 100%)', // Azul Cervantes por defecto
+                    borderLeftColor: dominantColor || '#60a5fa'
+                  }
+                : {};
+
+            return (
+                <div 
+                  className={`list-row group relative glass-panel rounded-xl overflow-hidden w-full ${isHovered ? 'is-hovered' : ''}`}
+                  style={rowStyle}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  {/* MARCA DE AGUA */}
+                  <div className="watermark-container">
+                     <LogoAvatar name={empresa.entidad} url={empresa.logoUrl} isWatermark={true} />
+                  </div>
+
+                  {/* CONTENIDO */}
+                  <div className="row-content relative z-10 p-4 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                    
+                    {/* Logo e Información */}
+                    <div className="flex items-center gap-4 min-w-0 sm:w-1/3">
+                        <div className="hidden sm:flex font-mono text-slate-400 text-sm font-bold w-6 justify-center shrink-0 transition-colors">
+                            #{index + 1}
+                        </div>
+                        {/* Pasamos handleImageLoad al avatar pequeño para procesar la imagen real */}
+                        <LogoAvatar 
+                            name={empresa.entidad} 
+                            url={empresa.logoUrl} 
+                            onLoad={handleImageLoad} 
+                        />
+                        <div className="min-w-0">
+                            <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1 truncate transition-colors">
+                                {empresa.entidad}
+                            </h3>
+                            <span className="category-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium transition-colors">
+                                {empresa.categoria}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Descripción */}
+                    <div className="hidden md:block flex-1 min-w-0">
+                        <p className="description-text text-sm text-slate-600 line-clamp-2 leading-relaxed transition-colors">
+                            {empresa.descripcion}
+                        </p>
+                    </div>
+
+                    {/* Beneficio y Acciones */}
+                    <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-4 shrink-0 ml-auto">
+                        <div className="benefit-box bg-green-50 border border-green-100 rounded-lg px-3 py-2 flex items-center gap-2 shadow-sm transition-colors min-w-[180px]">
+                            <IconPercent className="h-4 w-4 text-green-600 shrink-0" />
+                            <div>
+                                <p className="benefit-title text-[9px] font-bold text-green-700 uppercase tracking-widest leading-none mb-0.5">Beneficio</p>
+                                <p className="benefit-value text-xs font-bold text-green-900 leading-tight">{empresa.beneficio_corto}</p>
+                            </div>
+                        </div>
+
+                        {/* Botones Admin */}
+                        <div className={`flex gap-1 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                            <button onClick={() => handleEdit(empresa)} className="p-2 bg-white/90 text-blue-600 rounded-full hover:bg-white shadow-sm" title="Editar">
+                                <IconEdit className="h-4 w-4 icon-main" />
+                            </button>
+                            <button onClick={() => handleDelete(empresa.id)} className="p-2 bg-white/90 text-red-600 rounded-full hover:bg-white shadow-sm" title="Eliminar">
+                                <IconTrash className="h-4 w-4 icon-main" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Descripción Móvil */}
+                    <div className="md:hidden w-full mt-2 pt-2 border-t border-slate-100/50">
+                        <p className="description-text text-xs text-slate-500 line-clamp-3">
+                            {empresa.descripcion}
+                        </p>
+                    </div>
+                  </div>
+                </div>
+            );
         };
 
         // --- APP PRINCIPAL ---
@@ -457,7 +613,7 @@
              setLoading(false);
           };
 
-          // --- BUSCADOR INTELIGENTE (TODO EL RECUADRO) ---
+          // --- BUSCADOR INTELIGENTE ---
           const filteredCompanies = useMemo(() => {
             if (!searchTerm) return companies;
             const lowerTerm = searchTerm.toLowerCase();
@@ -552,74 +708,17 @@
                     </p>
                   </div>
 
-                  {/* VISTA DE LISTA (Estilo Tabla de Posiciones) */}
+                  {/* VISTA DE LISTA */}
                   {filteredCompanies.length > 0 ? (
                     <div className="flex flex-col gap-4 pb-20">
                       {filteredCompanies.map((empresa, index) => (
-                        <div 
-                          key={empresa.id} 
-                          className="list-row group relative glass-panel rounded-xl overflow-hidden w-full card-hover"
-                        >
-                          {/* MARCA DE AGUA (LOGO GIGANTE DE FONDO) */}
-                          <div className="watermark-container">
-                             <LogoAvatar name={empresa.entidad} url={empresa.logoUrl} isWatermark={true} />
-                          </div>
-
-                          {/* CONTENIDO DE LA FILA */}
-                          <div className="row-content relative z-10 p-4 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-                            
-                            {/* 1. Logo e Información Principal */}
-                            <div className="flex items-center gap-4 min-w-0 sm:w-1/3">
-                                <div className="hidden sm:flex font-mono text-slate-400 text-sm font-bold w-6 justify-center shrink-0">
-                                    #{index + 1}
-                                </div>
-                                <LogoAvatar name={empresa.entidad} url={empresa.logoUrl} />
-                                <div className="min-w-0">
-                                    <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1 truncate transition-colors">
-                                        {empresa.entidad}
-                                    </h3>
-                                    <span className="category-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium transition-colors">
-                                        {empresa.categoria}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* 2. Descripción (Centro) */}
-                            <div className="hidden md:block flex-1 min-w-0">
-                                <p className="description-text text-sm text-slate-600 line-clamp-2 leading-relaxed">
-                                    {empresa.descripcion}
-                                </p>
-                            </div>
-
-                            {/* 3. Beneficio y Acciones (Derecha) */}
-                            <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-4 shrink-0 ml-auto">
-                                <div className="benefit-box bg-green-50 border border-green-100 rounded-lg px-3 py-2 flex items-center gap-2 shadow-sm transition-colors min-w-[180px]">
-                                    <IconPercent className="h-4 w-4 text-green-600 shrink-0" />
-                                    <div>
-                                        <p className="benefit-title text-[9px] font-bold text-green-700 uppercase tracking-widest leading-none mb-0.5">Beneficio</p>
-                                        <p className="benefit-value text-xs font-bold text-green-900 leading-tight">{empresa.beneficio_corto}</p>
-                                    </div>
-                                </div>
-
-                                {/* Botones Admin */}
-                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => handleEdit(empresa)} className="p-2 bg-white/90 text-blue-600 rounded-full hover:bg-white shadow-sm" title="Editar">
-                                        <IconEdit className="h-4 w-4 icon-main" />
-                                    </button>
-                                    <button onClick={() => handleDelete(empresa.id)} className="p-2 bg-white/90 text-red-600 rounded-full hover:bg-white shadow-sm" title="Eliminar">
-                                        <IconTrash className="h-4 w-4 icon-main" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Descripción Móvil (visible solo en móvil) */}
-                            <div className="md:hidden w-full mt-2 pt-2 border-t border-slate-100/50">
-                                <p className="description-text text-xs text-slate-500 line-clamp-3">
-                                    {empresa.descripcion}
-                                </p>
-                            </div>
-                          </div>
-                        </div>
+                        <CompanyRow 
+                            key={empresa.id} 
+                            empresa={empresa} 
+                            index={index} 
+                            handleEdit={handleEdit} 
+                            handleDelete={handleDelete} 
+                        />
                       ))}
                     </div>
                   ) : (
