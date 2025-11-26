@@ -1,1 +1,662 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empresas Amigas - Institución Cervantes</title>
+    
+    <!-- Tailwind CSS (Diseño) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (Para entender JSX en el navegador) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <!-- Fuentes -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Efecto Glassmorphism */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .glass-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Animación suave */
+        .card-hover:hover {
+            transform: scale(1.02);
+            background: linear-gradient(135deg, #00529b 0%, #002a50 100%);
+        }
+        .card-hover:hover * {
+            border-color: rgba(255,255,255,0.2);
+        }
+        .card-hover:hover h3, 
+        .card-hover:hover span, 
+        .card-hover:hover p,
+        .card-hover:hover div {
+            color: white !important;
+        }
+        /* Excepciones para el hover */
+        .card-hover:hover .bg-blue-50 {
+            background-color: rgba(255,255,255,0.2) !important;
+        }
+        .card-hover:hover .bg-green-50 { /* Fondo beneficio */
+             background: rgba(255,255,255,0.15) !important;
+             border-color: rgba(255,255,255,0.3) !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        // --- ICONOS SVG (Para no depender de librerías externas) ---
+        const IconSearch = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
+        const IconBuilding = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M16 18h.01"/></svg>;
+        const IconUsers = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
+        const IconPercent = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>;
+        const IconInfo = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>;
+        const IconPlus = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="M12 5v14"/></svg>;
+        const IconX = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
+        const IconEdit = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
+        const IconSave = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>;
+        const IconTrash = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
+        const IconImage = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>;
+
+        // --- DATOS INICIALES ---
+        const INITIAL_DATA = [
+          { id: 1, entidad: "Konecta (Allus)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de Allus Córdoba y grupo familiar directo. Deben acreditar vinculación." },
+          { id: 2, entidad: "Club Atlético Belgrano", categoria: "Club Deportivo", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Socios al día del Club. Deben presentar el carnet de socios al día o verificar su situación en la web del CAB." },
+          { id: 3, entidad: "Cluster Córdoba Technology", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros del Cluster y grupo familiar directo. Deben acreditar vinculación." },
+          { id: 4, entidad: "Colegio Prof. de Corredores Públicos Inm.", categoria: "Colegio Profesional", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros del Colegio Profesional y grupo familiar directo." },
+          { id: 5, entidad: "Gobierno de la Provincia de Córdoba", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de la Administración Pública Provincial y su grupo familiar directo." },
+          { id: 6, entidad: "Policía de la Provincia de Córdoba", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de la Policía en actividad, retirados y grupo familiar directo." },
+          { id: 7, entidad: "25WATTS", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de 25WATTS y grupo familiar directo." },
+          { id: 8, entidad: "384 GROUP y Franquicias", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Integrantes de 384 GROUP y 384 Franquicias y Pymes SAS y grupo familiar directo." },
+          { id: 9, entidad: "Accesorios Sisters", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de Accesorios Sisters y grupo familiar directo." },
+          { id: 10, entidad: "ACTACC", categoria: "Asociación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados a la Asociación y grupo familiar directo." },
+          { id: 11, entidad: "AEFIP", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros y Afiliados al Sindicato y grupo familiar directo." },
+          { id: 12, entidad: "AEGIS", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de Allus Córdoba y grupo familiar directo." },
+          { id: 13, entidad: "AEPSA S.R.L.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Para empleados y familiares directos acreditando fehaciente vinculación." },
+          { id: 14, entidad: "AGEC (Emp. Comercio)", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros y Afiliados al Sindicato y grupo familiar directo." },
+          { id: 15, entidad: "AIT S.A. (Grupo Arteche)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de AIT S.A. y grupo familiar directo." },
+          { id: 16, entidad: "ALLADIO e Hijos S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de Alladio e Hijos S.A. o familiar directo." },
+          { id: 17, entidad: "ALOO S.A. (Call Center)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de ALOO S.A. y grupo familiar directo." },
+          { id: 18, entidad: "Anexion Contac Center", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficio para empleados y familiares directos." },
+          { id: 19, entidad: "APEX AMERICA BPO", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: miembros de APEX AMERICA BPO y grupo familiar directo." },
+          { id: 20, entidad: "APYME", categoria: "Asociación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios que acrediten pertenecer a la asamblea." },
+          { id: 21, entidad: "ARGA INTERCULTURAL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de ARGA INTERCULTURAL y grupo familiar directo." },
+          { id: 22, entidad: "ASECOR", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de ASECOR y grupo familiar directo." },
+          { id: 23, entidad: "Asetec", categoria: "Asociación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: empleados y familiares directos." },
+          { id: 24, entidad: "APHISEMA (Higiene y Seg)", categoria: "Asociación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de la Asociación y grupo familiar directo." },
+          { id: 25, entidad: "CNEA (Energ. Atómica)", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de la Asociación y grupo familiar directo." },
+          { id: 26, entidad: "Mutual Pasteleros Cba", categoria: "Mutual", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros, familiares directos y Afiliados." },
+          { id: 27, entidad: "Cultura Británica", categoria: "Educación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficio para empleados y familiares directos." },
+          { id: 28, entidad: "Bomberos Vol. Virgen de Fátima", categoria: "Asociación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Integrantes de la Asociación y grupo familiar directo." },
+          { id: 29, entidad: "ACAP (Agencias Publicidad)", categoria: "Asociación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de ACAP y grupo familiar directo." },
+          { id: 30, entidad: "Mujeres en Tecnología (MeT)", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de MeT y grupo familiar directo." },
+          { id: 31, entidad: "Mutual 03 de Abril", categoria: "Mutual", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros y Afiliados y grupo familiar directo." },
+          { id: 32, entidad: "ATACC (Call Centers)", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros y Afiliados de ATACC o familiar directo." },
+          { id: 33, entidad: "AUTOCITY", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de Tagle, Avant, Nix, Rubic, Rolen y grupo familiar directo." },
+          { id: 34, entidad: "BERTOLDI", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de BERTOLDI y grupo familiar directo." },
+          { id: 35, entidad: "BIOCORDOBA", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros del Ente Municipal BIOCORDOBA y grupo familiar directo." },
+          { id: 36, entidad: "BOLDT S.A", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Grupo BOLDT SA (BGAMING, SPTISA, ORBITH) o familiar directo." },
+          { id: 37, entidad: "BRIDGESTONE BOXES", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de Conectar SRL y grupo familiar directo." },
+          { id: 38, entidad: "BUCOR", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de BUCOR y grupo familiar directo." },
+          { id: 39, entidad: "Cámara de Comercio de Cba", categoria: "Cámara", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Titulares beneficiarios y familiares directos. +30% en cursos CCAP." },
+          { id: 40, entidad: "Cámara de Franquicias Cba", categoria: "Cámara", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes, familiares directos y empresas que formen parte." },
+          { id: 41, entidad: "Cami Salud", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados a CAMI Salud, Empleados, Administrativos y familiares directos." },
+          { id: 42, entidad: "Caminos de las Sierras", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de Caminos de las Sierras SA y grupo familiar directo." },
+          { id: 43, entidad: "Casa de Catamarca", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de la Casa de Catamarca." },
+          { id: 44, entidad: "Casa de Jujuy", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de la Casa de Jujuy." },
+          { id: 45, entidad: "Casa de la Juventud Pampeana", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de la Casa de la Juventud Pampeana." },
+          { id: 46, entidad: "Casa de La Rioja", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios que acrediten vinculación con la casa de La Rioja." },
+          { id: 47, entidad: "CASAFIC (Salones Fiesta)", categoria: "Cámara", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Para empleados y familiares directos." },
+          { id: 48, entidad: "CEDI (Consulting)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de CEDI y grupo familiar directo." },
+          { id: 49, entidad: "OULTON (Tomografía)", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros y Empleados de Oulton o familiar directo." },
+          { id: 50, entidad: "CETROGAR", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de CETROGAR y grupo familiar directo." },
+          { id: 51, entidad: "CIIECCA", categoria: "Cámara", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de la Cámara, familiares directos y empresas miembros." },
+          { id: 52, entidad: "Instituto A.C.C. (Gloria)", categoria: "Club Deportivo", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes, grupo familiar y Socios Activos con cuota al día." },
+          { id: 53, entidad: "Club Atlético Talleres", categoria: "Club Deportivo", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Socios del Club Atlético Talleres." },
+          { id: 54, entidad: "Biblioteca Popular Alberdi", categoria: "Club Deportivo", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados, grupo familiar y Socios al día." },
+          { id: 55, entidad: "Club Parque Velez Sarsfield", categoria: "Club Deportivo", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros, Empleados y familiares directos. Asociados (solo titulares)." },
+          { id: 56, entidad: "Coca Cola Embotelladora", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Para empleados y familiares." },
+          { id: 57, entidad: "Colegio Alemán", categoria: "Educación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Egresados, Personal y familiares directos." },
+          { id: 58, entidad: "Colegio de Abogados", categoria: "Colegio Profesional", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros, Empleados y familiares directos." },
+          { id: 59, entidad: "Colegio de Farmacéuticos", categoria: "Colegio Profesional", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros, Colegiados, Empleados y familiares directos." },
+          { id: 60, entidad: "CIEC (Ingenieros)", categoria: "Colegio Profesional", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros del Colegio Profesional y grupo familiar directo." },
+          { id: 61, entidad: "Colegio de Traductores", categoria: "Colegio Profesional", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes, matriculados y grupo familiar directo." },
+          { id: 62, entidad: "Colegio Maryland", categoria: "Educación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Egresados, Personal y familiares directos." },
+          { id: 63, entidad: "Colegio Martilleros", categoria: "Colegio Profesional", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros del Colegio Profesional y grupo familiar directo." },
+          { id: 64, entidad: "Comuna Valle de Anisacate", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Habitantes del Valle acreditando domicilio." },
+          { id: 65, entidad: "Concejo Deliberante Cba", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros del Concejo y grupo familiar directo." },
+          { id: 66, entidad: "Conci Carpinella", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficio para empleados y familiares directos." },
+          { id: 67, entidad: "CONDUENT", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Empleados de CONDUENT y grupo familiar directo." },
+          { id: 68, entidad: "CONECTAR SRL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Conectar SRL y grupo familiar directo." },
+          { id: 69, entidad: "Consejo Prof. Cs. Económicas", categoria: "Colegio Profesional", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Matriculados, Empleados y grupo familiar directo." },
+          { id: 70, entidad: "Conte mas", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: empleados y familiares directos." },
+          { id: 71, entidad: "Coop. Obras y Serv. Publico", categoria: "Cooperativa", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios asociados a la coop." },
+          { id: 72, entidad: "Coop. Serv. Públicos Porteña", categoria: "Cooperativa", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros y Afiliados y grupo familiar directo." },
+          { id: 73, entidad: "Cooperativa Agua de Oro", categoria: "Cooperativa", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros y Afiliados y grupo familiar directo." },
+          { id: 74, entidad: "Coop. Río Ceballos", categoria: "Cooperativa", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros y Afiliados y grupo familiar directo." },
+          { id: 75, entidad: "Coop. Luque Ltda", categoria: "Cooperativa", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros y Afiliados y grupo familiar directo." },
+          { id: 76, entidad: "CÓRDOBA SOFTWARE", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Córdoba Software y grupo familiar directo." },
+          { id: 77, entidad: "CPCIPC (Informáticos)", categoria: "Colegio Profesional", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros del Consejo Profesional y grupo familiar directo." },
+          { id: 78, entidad: "CPI (Inmobiliarios)", categoria: "Colegio Profesional", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados y familiares directos." },
+          { id: 79, entidad: "CUMED ANEXION", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de CUMED ANEXION y grupo familiar directo." },
+          { id: 80, entidad: "DAYCO ARGENTINA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de DAYCO y grupo familiar directo." },
+          { id: 81, entidad: "Deelo (Evoltis/TecnoVoz)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros y grupo familiar directo." },
+          { id: 82, entidad: "Del Pilar (Panificadora)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Panificadora Del Pilar y grupo familiar directo." },
+          { id: 83, entidad: "DENIMED S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de DENIMED S.A. y grupo familiar directo." },
+          { id: 84, entidad: "DESCAR ARGENTINA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de Descar Argentina SRL y grupo familiar directo." },
+          { id: 85, entidad: "Disco, Vea, Jumbo", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficio para empleados y familiares directos." },
+          { id: 86, entidad: "Distribuidora M. Fernández", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados y grupo familiar directo." },
+          { id: 87, entidad: "DIVERTIMENTOS S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de DIVERTIMENTOS S.A. y grupo familiar directo." },
+          { id: 88, entidad: "DREAN S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Descuento y beca a empleados y familiares directos." },
+          { id: 89, entidad: "DROGUERIA COFARSUR", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de DROGUERIA COFARSUR y grupo familiar directo." },
+          { id: 90, entidad: "DYCSA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de DYCSA y grupo familiar directo." },
+          { id: 91, entidad: "ECCO Emergencias", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de ECCO y grupo familiar directo." },
+          { id: 92, entidad: "El Balcón", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de El Balcón y grupo familiar directo." },
+          { id: 93, entidad: "EMPOWER TALENT", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de EMPOWER TALENT y grupo familiar directo." },
+          { id: 94, entidad: "ENERMINDS", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Enerminds y grupo familiar directo." },
+          { id: 95, entidad: "ESECURE", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de ESECURE y grupo familiar directo." },
+          { id: 96, entidad: "F.U.N.I.C.", categoria: "Educación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Para empleados, familiares, alumnos y egresados." },
+          { id: 97, entidad: "FAdeA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros de FAdeA y grupo familiar directo." },
+          { id: 98, entidad: "FALABELLA y SODIMAC", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de FALABELLA y SODIMAC y grupo familiar directo." },
+          { id: 99, entidad: "FECESCOR", categoria: "Cooperativa", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados, Integrantes y Afiliados a las Cooperativas de FECESCOR." },
+          { id: 100, entidad: "FERNIPLAST", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Ferniplast y grupo familiar directo." },
+          { id: 101, entidad: "Ferreteria de Diego", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: empleados y familiares directos." },
+          { id: 102, entidad: "FLEXXUS", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de FLEXXUS y grupo familiar directo." },
+          { id: 103, entidad: "FUNDACIÓN MALVINAS", categoria: "Fundación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de la Fundación y grupo familiar directo." },
+          { id: 104, entidad: "FUNIVERSITY", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de FUNIVERSITY y grupo familiar directo." },
+          { id: 105, entidad: "G&A (Ascensores)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de G&A (Ascensores) y grupo familiar directo." },
+          { id: 106, entidad: "GAMISOL y Cía", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de GAMISOL y Cía y grupo familiar directo." },
+          { id: 107, entidad: "GO Cuotas", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de GO Cuotas y grupo familiar directo." },
+          { id: 108, entidad: "GO Idiomas", categoria: "Educación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados, familiares directos y alumnos regulares." },
+          { id: 109, entidad: "GRUPO DINOSAURIO", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Grupo Dinosaurio y grupo familiar directo." },
+          { id: 110, entidad: "GRUPO DISAL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de GRUPO DISAL y grupo familiar directo." },
+          { id: 111, entidad: "Grupo ERSA y AUCOR", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros de Grupo ERSA y AUCOR y grupo familiar directo." },
+          { id: 112, entidad: "GRUPO FULL S.R.L", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de GRUPO FULL S.R.L y grupo familiar directo." },
+          { id: 113, entidad: "Grupo GEA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados a GEA, Empleados de empresas de Grupo GEA y familiares." },
+          { id: 114, entidad: "Grupo Hosp. Privado", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes y Empleados de Hosp. Privado, farmacias HP FARMA." },
+          { id: 115, entidad: "Grupo LMR", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Grupo LMR y grupo familiar directo." },
+          { id: 116, entidad: "Grupo Meditel", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros del Grupo Meditel y grupo familiar directo." },
+          { id: 117, entidad: "Grupo Sierras", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Grupo Sierras y grupo familiar directo." },
+          { id: 118, entidad: "GUANTEX", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de GUANTEX y grupo familiar directo." },
+          { id: 119, entidad: "Habitar Córdoba", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Habitar Córdoba y grupo familiar directo." },
+          { id: 120, entidad: "HELACOR S.A. (Grido)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de HELACOR S.A. y grupo familiar directo." },
+          { id: 121, entidad: "ICONOS S.R.L", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros de ICONOS S.R.L. y grupo familiar directo." },
+          { id: 122, entidad: "IDENTEL SRL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de IDENTEL SRL y grupo familiar directo." },
+          { id: 123, entidad: "INDONESIA (Mito SRL)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Indonesia (Mito SRL) y grupo familiar directo." },
+          { id: 124, entidad: "INTEGRALL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de INTEGRALL y grupo familiar directo." },
+          { id: 125, entidad: "IPSecurity", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de IPSecurity y grupo familiar directo." },
+          { id: 126, entidad: "IPTEL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de IPTEL y grupo familiar directo." },
+          { id: 127, entidad: "ISCOT SERVICE S.A", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de ISCOT y grupo familiar directo." },
+          { id: 128, entidad: "IVECO GROUP", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de IVECO GROUP y grupo familiar directo." },
+          { id: 129, entidad: "Krause S.A.S.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Para empleados y familiares directos." },
+          { id: 130, entidad: "La Lumiere", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de La Lumiere y grupo familiar directo." },
+          { id: 131, entidad: "LA MAQUINITA (MGCo)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros de LA MAQUINITA y grupo familiar directo." },
+          { id: 132, entidad: "LAEM (Escuela Música)", categoria: "Educación", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: empleados y familiares directos." },
+          { id: 133, entidad: "LAMSA (Logística)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de LAMSA y grupo familiar directo." },
+          { id: 134, entidad: "Libremas", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficio a empleados y familiares directos." },
+          { id: 135, entidad: "Localidades Varias (Interior)", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Habitantes de Agua de Oro, Canals, Calera, Morteros, Inriville, La Puerta, La Falda, La Granja, Malagueño, Mendiolaza, Monte Cristo, Salsipuedes, Unquillo, Villa Allende, Carlos Paz, Belgrano." },
+          { id: 136, entidad: "Márquez & Asociados", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Márquez & Asociados o familiar directo." },
+          { id: 137, entidad: "MC ELECTROMEDICINA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de MC ELECTROMEDICINA y grupo familiar directo." },
+          { id: 138, entidad: "MEC (Mutual Comunic.)", categoria: "Mutual", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados de MEC, Integrantes y familiares directos." },
+          { id: 139, entidad: "Mediterránea Tecnologicas", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de la empresa y grupo familiar directo." },
+          { id: 140, entidad: "METALDESIGN", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de METALDESIGN y grupo familiar directo." },
+          { id: 141, entidad: "METRO TEC", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de METRO TEC y grupo familiar directo." },
+          { id: 142, entidad: "Min. Industria y Comercio", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de la Federación Comercial de Córdoba y familiares." },
+          { id: 143, entidad: "Montironi Automotores", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Montironi Automotores y grupo familiar directo." },
+          { id: 144, entidad: "MOSTACHYS", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de MOSTACHYS y grupo familiar directo." },
+          { id: 145, entidad: "MOTO CENTER", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de MOTO CENTER y grupo familiar directo." },
+          { id: 146, entidad: "MUNDO HELADO S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de MUNDO HELADO S.A. y grupo familiar directo." },
+          { id: 147, entidad: "Municipalidad de Córdoba", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados Municipalidad de Córdoba y su grupo familiar directo." },
+          { id: 148, entidad: "MW TECNOLOGÍA", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de MW Tecnología Informática y grupo familiar directo." },
+          { id: 149, entidad: "NEXO GROUP", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de NEXO GROUP y grupo familiar directo." },
+          { id: 150, entidad: "NUCLEO ENCENDIDO", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de Nucleo Encendido y Robra SRL y grupo familiar directo." },
+          { id: 151, entidad: "OFFICENTER ARGENTINA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de OFFICENTER ARGENTINA y grupo familiar directo." },
+          { id: 152, entidad: "ORGANIZACIÓN SUCESOS", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de ORGANIZACIÓN SUCESOS y grupo familiar directo." },
+          { id: 153, entidad: "Pan Plano SRL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Pan Plano y grupo familiar directo." },
+          { id: 154, entidad: "PAPELERA CUMBRE SA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de PAPELERA CUMBRE SA y grupo familiar directo." },
+          { id: 155, entidad: "PARAMEDIC", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados a Paramedic, Empleados y familiares directos." },
+          { id: 156, entidad: "Pi Data Strategy", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Pi Data Strategy y grupo familiar directo." },
+          { id: 157, entidad: "PINTECORD SRL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de PINTECORD SRL y grupo familiar directo." },
+          { id: 158, entidad: "Pinturerías FAST-COLOR", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Pinturerías FAST COLOR y grupo familiar directo." },
+          { id: 159, entidad: "Pinturerías GARIN", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Pinturerías Garín y grupo familiar directo." },
+          { id: 160, entidad: "PORTA Hnos. SA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de PORTA Hnos. SA y grupo familiar directo." },
+          { id: 161, entidad: "Prevención Salud (Sancor)", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados, Empleados y familiares directos." },
+          { id: 162, entidad: "PROCOM IT SOLUTIONS", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de PROCOM IT Solutions y grupo familiar directo." },
+          { id: 163, entidad: "Protection One SRL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros de Protection One SRL y grupo familiar directo." },
+          { id: 164, entidad: "PROXIMO Contact Center", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Contact center." },
+          { id: 165, entidad: "RAPIPAGO (Gire SA)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Rapipago (Gire SA) y grupo familiar directo." },
+          { id: 166, entidad: "Renault Argentina S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: empleados y familiares directos." },
+          { id: 167, entidad: "RM CUANTICA SAS", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de CUANTICA SAS y grupo familiar directo." },
+          { id: 168, entidad: "ROGA CHEF S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de ROGA CHEF S.A. y grupo familiar directo." },
+          { id: 169, entidad: "RUF (Robótica)", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de RUF y grupo familiar directo." },
+          { id: 170, entidad: "SABIO GO", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de SABIO GO y grupo familiar directo." },
+          { id: 171, entidad: "Sanatorio Allende", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Sanatorio Allende y grupo familiar directo." },
+          { id: 172, entidad: "Sanatorio Del Salvador", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Sanatorio Del Salvador y grupo familiar directo." },
+          { id: 173, entidad: "Sancor Salud", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados, Empleados y familiares directos." },
+          { id: 174, entidad: "SC SPORT CENTER", categoria: "Club Deportivo", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de SPORT CENTRE y grupo familiar directo." },
+          { id: 175, entidad: "SEMACOR (Mutual)", categoria: "Mutual", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de SEMACOR y grupo familiar directo." },
+          { id: 176, entidad: "SERVICIOS INTEGRALES", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de SERVICIOS INTEGRALES y grupo familiar directo." },
+          { id: 177, entidad: "SERVYCOM", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de SERVYCOM y grupo familiar directo." },
+          { id: 178, entidad: "SIMPLE ABASTO", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de SIMPLE ABASTO y grupo familiar directo." },
+          { id: 179, entidad: "Sindicato Taxis Cba", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios que acrediten pertenecer al sindicato." },
+          { id: 180, entidad: "Sindicato Petrolero", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros y Afiliados al Sindicato y grupo familiar directo." },
+          { id: 181, entidad: "Sindicato Canillitas", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: empleados y familiares directos." },
+          { id: 182, entidad: "SiReLyF (Luz y Fuerza)", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros y Afiliados al Sindicato y grupo familiar directo." },
+          { id: 183, entidad: "SKYMEDIC o NOORUS", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de SKYMEDIC o NOORUS y grupo familiar directo." },
+          { id: 184, entidad: "SOELSAC", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados del Sindicato y grupo familiar directo." },
+          { id: 185, entidad: "SOETC (Telefónicos)", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados, Miembros de SOETC y grupo familiar directo." },
+          { id: 186, entidad: "SOOFT Technology", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de SOOFT Technology y grupo familiar directo." },
+          { id: 187, entidad: "STEFANINI ARGENTINA", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Stefanini SRL y grupo familiar directo." },
+          { id: 188, entidad: "SUTCOC (Cooperadoras)", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados al Sindicato y grupo familiar directo." },
+          { id: 189, entidad: "SUVICO (Vigilancia)", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados al Sindicato y grupo familiar directo." },
+          { id: 190, entidad: "Swiss Medical", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados a Swiss Medical, Empleados y familiares." },
+          { id: 191, entidad: "TECNOMYL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de TECNOMYL y grupo familiar directo." },
+          { id: 192, entidad: "TECNORED S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de TECNORED S.A y grupo familiar directo." },
+          { id: 193, entidad: "Tejamax S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: empleados y familiares directos." },
+          { id: 194, entidad: "TEJANO (Astur S.A.)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Tejano y grupo familiar directo." },
+          { id: 195, entidad: "Telecom / Cablevisión", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados Telecom, Cablevisión o Fibertel y grupo familiar directo." },
+          { id: 196, entidad: "TELENIK S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de TELENIK S.A. y grupo familiar directo." },
+          { id: 197, entidad: "TODO SUSPENSIÓN S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de TODO SUSPENSIÓN S.A y grupo familiar directo." },
+          { id: 198, entidad: "TOTAL CLEAN SRL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de TOTAL CLEAN SRL y grupo familiar directo." },
+          { id: 199, entidad: "TSI (Seguridad)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros de la Empresa, familiares y abonados." },
+          { id: 200, entidad: "TV5 Comunicaciones", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros, Grupo Fliar directo y Usuarios de la Cooperativa." },
+          { id: 201, entidad: "UECARA (Construcción)", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros y Afiliados al Sindicato y grupo familiar directo." },
+          { id: 202, entidad: "URG (Urgencias)", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de URG y grupo familiar directo." },
+          { id: 203, entidad: "UTA (Transporte)", categoria: "Sindicato", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Afiliados a UTA y grupo familiar directo." },
+          { id: 204, entidad: "VESINM-GRUPO VESPASIANI", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de VESINM-GRUPO VESPASIANI y grupo familiar directo." },
+          { id: 205, entidad: "VISUALIZAR Óptica LARA", categoria: "Salud", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de VISUALIZAR Óptica LARA y grupo familiar directo." },
+          { id: 206, entidad: "VOICENTER S.A.", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Miembros de Voicenter S.A. y grupo familiar directo." },
+          { id: 207, entidad: "VOLKSWAGEN ARGENTINA", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Integrantes de VW (dependencia y eventuales) y grupo familiar directo." },
+          { id: 208, entidad: "VOS Soluciones", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de VOS Soluciones SRL y grupo familiar directo." },
+          { id: 209, entidad: "VOYANEXT SAS", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de VOYANEXT SAS y grupo familiar directo." },
+          { id: 210, entidad: "Walmart y Changomas", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Walmart SRL y Changomas y grupo familiar directo." },
+          { id: 211, entidad: "WEG Equipamientos", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de WEG Equip.Electr. SA y grupo familiar directo." },
+          { id: 212, entidad: "Xline (Xsolutions)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de Xsolutions SAS y grupo familiar directo." },
+          { id: 213, entidad: "ZB ARGENTINA SRL", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Empleados de ZB ARGENTINA SRL y grupo familiar directo." },
+          { id: 300, entidad: "Escuelas IPEM / IPET (Varios)", categoria: "Educación", beneficio_corto: "50% Matrícula / 20% Cuotas + Becas", descripcion: "Incluye: IPEM 10, 115, 131, 160, 194, 270, 43, 138, IPET 247, 249, 250, 77. Beneficio para docentes, no docentes y familiares. Consultar por Beca FHV." },
+        ];
+
+        // --- COMPONENTE AVATAR ---
+        const LogoAvatar = ({ name, url }) => {
+          if (url) {
+            return (
+              <div className="w-16 h-16 rounded-full overflow-hidden shadow-lg shrink-0 border-2 border-white bg-white flex items-center justify-center">
+                <img src={url} alt={name} className="w-full h-full object-cover" />
+              </div>
+            );
+          }
+          const initials = name
+            ? name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+            : 'IC';
+          
+          const getColor = (str) => {
+            let hash = 0;
+            const s = str || 'default';
+            for (let i = 0; i < s.length; i++) {
+              hash = s.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+            return '#' + '00000'.substring(0, 6 - c.length) + c;
+          };
+
+          return (
+            <div 
+              className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold shadow-lg shrink-0 border-2 border-white"
+              style={{ backgroundColor: getColor(name), color: '#fff' }}
+            >
+              {initials}
+            </div>
+          );
+        };
+
+        // --- APP PRINCIPAL ---
+        const App = () => {
+          // Cargamos de localStorage O usamos los datos iniciales
+          const [companies, setCompanies] = useState(() => {
+            const saved = localStorage.getItem('cervantes_companies');
+            if (saved) return JSON.parse(saved);
+            
+            // Si no hay guardado, usamos la data inicial ordenada
+            const sorted = [...INITIAL_DATA].sort((a, b) => a.entidad.localeCompare(b.entidad));
+            return sorted;
+          });
+
+          const [searchTerm, setSearchTerm] = useState('');
+          const [isModalOpen, setIsModalOpen] = useState(false);
+          const [currentCompany, setCurrentCompany] = useState(null); 
+
+          // Guardar en localStorage cada vez que cambien las empresas
+          useEffect(() => {
+            localStorage.setItem('cervantes_companies', JSON.stringify(companies));
+          }, [companies]);
+
+          const filteredCompanies = useMemo(() => {
+            return companies.filter(company => 
+              company.entidad.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              company.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+          }, [companies, searchTerm]);
+
+          const handleEdit = (company) => {
+            setCurrentCompany(company);
+            setIsModalOpen(true);
+          };
+
+          const handleAddNew = () => {
+            setCurrentCompany(null);
+            setIsModalOpen(true);
+          };
+
+          const handleDelete = (id) => {
+            if (window.confirm("¿Seguro que deseas eliminar esta empresa?")) {
+              setCompanies(prev => prev.filter(c => c.id !== id));
+            }
+          };
+
+          const handleSave = (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const newEntidad = formData.get('entidad');
+            const newBeneficio = formData.get('beneficio_corto');
+            const newDesc = formData.get('descripcion');
+            const newCat = formData.get('categoria');
+            const newLogoUrl = formData.get('logoUrl');
+
+            if (currentCompany) {
+              setCompanies(prev => prev.map(c => 
+                c.id === currentCompany.id 
+                  ? { ...c, entidad: newEntidad, beneficio_corto: newBeneficio, descripcion: newDesc, categoria: newCat, logoUrl: newLogoUrl }
+                  : c
+              ));
+            } else {
+              const newId = companies.length > 0 ? Math.max(...companies.map(c => c.id), 0) + 1 : 1;
+              const newCompany = {
+                id: newId,
+                entidad: newEntidad,
+                beneficio_corto: newBeneficio,
+                descripcion: newDesc,
+                categoria: newCat,
+                logoUrl: newLogoUrl
+              };
+              setCompanies(prev => [newCompany, ...prev]);
+            }
+            setIsModalOpen(false);
+          };
+
+          return (
+            <div className="min-h-screen font-sans text-slate-800 bg-fixed bg-cover bg-center"
+                 style={{ backgroundImage: "url('https://i.postimg.cc/dtDHVQ1X/image.png')" }}>
+              
+              <div className="min-h-screen bg-slate-900/40 backdrop-blur-[3px]">
+                
+                {/* Header */}
+                <header className="sticky top-0 z-20 glass-header shadow-lg">
+                  <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                    
+                    <div className="flex items-center gap-4">
+                      <img 
+                        src="https://i.postimg.cc/1XVj0682/Cervantes.png" 
+                        alt="Institución Cervantes" 
+                        className="h-12 object-contain filter drop-shadow-md"
+                      />
+                      <div className="hidden md:block w-px h-10 bg-white/30 mx-2"></div>
+                      <h1 className="text-xl md:text-2xl font-bold text-white tracking-wide drop-shadow-md hidden md:block">
+                        Empresas Amigas
+                      </h1>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                      <div className="relative w-full md:w-80 group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <IconSearch className="h-5 w-5 text-blue-100 group-focus-within:text-white transition-colors" />
+                        </div>
+                        <input
+                          type="text"
+                          className="block w-full pl-10 pr-3 py-2 border border-white/20 rounded-full leading-5 bg-white/10 text-white placeholder-blue-100 focus:outline-none focus:bg-white/20 focus:ring-2 focus:ring-white/50 focus:border-transparent sm:text-sm transition-all duration-300 backdrop-blur-sm shadow-inner"
+                          placeholder="Buscar convenio..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+
+                      <button 
+                        onClick={handleAddNew}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg hover:shadow-blue-500/30 transition-all transform hover:-translate-y-0.5"
+                      >
+                        <IconPlus className="h-4 w-4" />
+                        <span className="hidden sm:inline">Nueva</span>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+
+                {/* Main Content */}
+                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  
+                  <div className="mb-6 flex items-center justify-between text-white/90">
+                    <p className="text-sm font-medium drop-shadow-sm">
+                      Mostrando <span className="font-bold text-white text-lg">{filteredCompanies.length}</span> convenios activos
+                    </p>
+                  </div>
+
+                  {/* Grid de Tarjetas */}
+                  {filteredCompanies.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredCompanies.map((empresa) => (
+                        <div 
+                          key={empresa.id} 
+                          className="card-hover group relative glass-panel rounded-2xl shadow-xl transition-all duration-500 flex flex-col h-full overflow-hidden"
+                        >
+                          <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <button 
+                              onClick={() => handleEdit(empresa)}
+                              className="p-1.5 bg-white/90 text-blue-600 rounded-full hover:bg-white shadow-sm transition-colors"
+                              title="Editar"
+                            >
+                              <IconEdit className="h-3 w-3" />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(empresa.id)}
+                              className="p-1.5 bg-white/90 text-red-600 rounded-full hover:bg-white shadow-sm transition-colors"
+                              title="Eliminar"
+                            >
+                              <IconTrash className="h-3 w-3" />
+                            </button>
+                          </div>
+
+                          <div className="p-6 flex items-start gap-4 border-b border-slate-100/50 group-hover:border-white/10">
+                            <LogoAvatar name={empresa.entidad} url={empresa.logoUrl} />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-bold text-slate-800 leading-tight mb-1 truncate transition-colors" title={empresa.entidad}>
+                                {empresa.entidad}
+                              </h3>
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100/50 transition-colors">
+                                {empresa.categoria}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="p-6 flex-1 flex flex-col">
+                            <div className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl p-3 flex items-start gap-3 shadow-inner transition-all">
+                              <IconPercent className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-0.5">Beneficio</p>
+                                <p className="text-sm font-bold text-green-900">{empresa.beneficio_corto}</p>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-3 text-slate-600 text-sm mt-auto transition-colors">
+                              <IconInfo className="h-5 w-5 text-slate-400 shrink-0 mt-0.5" />
+                              <p className="leading-relaxed text-xs sm:text-sm line-clamp-4 hover:line-clamp-none transition-all cursor-default">
+                                {empresa.descripcion}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="bg-slate-50/50 px-6 py-3 border-t border-slate-100/50 transition-colors">
+                            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+                              <span className="flex items-center gap-1">
+                                <IconUsers className="h-3 w-3" />
+                                Vigente
+                              </span>
+                              <span className="text-blue-600 cursor-pointer hover:underline">Ver detalles</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-20 glass-panel rounded-3xl shadow-2xl">
+                      <div className="bg-white/20 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm border border-white/30">
+                        <IconBuilding className="h-10 w-10 text-white" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-800 drop-shadow-md">No se encontraron resultados</h3>
+                      <p className="text-slate-600 mt-2">Prueba con otro término o agrega una nueva empresa.</p>
+                      <button 
+                        onClick={() => setSearchTerm('')}
+                        className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-full text-sm font-bold hover:bg-blue-700 transition-colors shadow-lg"
+                      >
+                        Limpiar filtros
+                      </button>
+                    </div>
+                  )}
+                </main>
+              </div>
+
+              {/* MODAL */}
+              {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
+                  <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                      <h3 className="text-lg font-bold text-slate-800">
+                        {currentCompany ? 'Editar Empresa' : 'Nueva Empresa'}
+                      </h3>
+                      <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                        <IconX className="h-5 w-5" />
+                      </button>
+                    </div>
+                    
+                    <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Entidad</label>
+                        <input 
+                          name="entidad" 
+                          defaultValue={currentCompany?.entidad} 
+                          required
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          placeholder="Ej: Empresa S.A."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">URL del Logo (Opcional)</label>
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute top-2.5 left-3 text-slate-400">
+                                <IconImage className="h-4 w-4" />
+                            </span>
+                            <input 
+                              name="logoUrl" 
+                              defaultValue={currentCompany?.logoUrl} 
+                              className="w-full pl-9 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                              placeholder="https://..."
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1">Pega el link de la imagen de la empresa.</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Beneficio (Resumen)</label>
+                        <input 
+                          name="beneficio_corto" 
+                          defaultValue={currentCompany?.beneficio_corto || "50% Matrícula / 20% Cuotas"} 
+                          required
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
+                        <select 
+                          name="categoria" 
+                          defaultValue={currentCompany?.categoria || "Empresa Privada"}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+                        >
+                          <option>Empresa Privada</option>
+                          <option>Gobierno</option>
+                          <option>Club Deportivo</option>
+                          <option>Tecnología</option>
+                          <option>Colegio Profesional</option>
+                          <option>Salud</option>
+                          <option>Sindicato</option>
+                          <option>Mutual</option>
+                          <option>Educación</option>
+                          <option>Cooperativa</option>
+                          <option>Cámara</option>
+                          <option>Otro</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Descripción / Requisitos</label>
+                        <textarea 
+                          name="descripcion" 
+                          defaultValue={currentCompany?.descripcion}
+                          required
+                          rows={4}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+                          placeholder="Detalla quiénes son los beneficiarios y qué deben presentar..."
+                        />
+                      </div>
+
+                      <div className="pt-4 flex gap-3">
+                        <button 
+                          type="button" 
+                          onClick={() => setIsModalOpen(false)}
+                          className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          type="submit"
+                          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex justify-center items-center gap-2"
+                        >
+                          <IconSave className="h-4 w-4" />
+                          Guardar
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
