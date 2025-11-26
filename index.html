@@ -20,7 +20,7 @@
 
     <!-- Estilos -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
         .glass-panel {
@@ -35,22 +35,22 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        /* Estilos Base de la Fila */
+        /* Fila Base */
         .list-row {
             transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             background: white;
             border-left: 4px solid transparent;
             position: relative;
-            overflow: hidden;
+            overflow: hidden; /* CLAVE: Para recortar el texto gigante */
             transform-origin: center;
         }
 
-        /* CLASES ACTIVAS (Hover) */
+        /* Estado Hover Activo */
         .list-row.is-hovered {
-            transform: scale(1.025);
+            transform: scale(1.02);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
             z-index: 20;
-            border-left-color: rgba(255,255,255,0.5);
+            /* El color de borde y fondo se aplican dinámicamente via JS */
         }
 
         /* Textos a Blanco en Hover */
@@ -66,7 +66,6 @@
             background-color: rgba(255,255,255,0.2) !important;
             color: white !important;
             border-color: rgba(255,255,255,0.3) !important;
-            backdrop-filter: blur(4px);
         }
 
         /* Iconos Generales en Hover */
@@ -74,60 +73,43 @@
             color: rgba(255,255,255,0.9) !important;
         }
 
-        /* --- MARCA DE AGUA INTELIGENTE (WATERMARK) --- */
-        .watermark-container {
+        /* --- TYPOGRAPHY WATERMARK (TEXTO GIGANTE DE FONDO) --- */
+        .text-watermark {
             position: absolute;
-            left: -2%; /* POSICIÓN: Al principio */
-            top: 50%;
-            transform: translateY(-50%);
-            height: 180%; /* Bien grande */
-            width: auto;
+            /* Posición para lograr el efecto "recortado" */
+            left: -1rem; 
+            bottom: -1.8rem; /* Cortamos la parte inferior de las letras */
+            
+            font-size: 7rem; /* Tamaño gigante */
+            font-weight: 900; /* Black weight */
+            line-height: 0.75; /* Apretado para efecto bloque */
+            white-space: nowrap;
+            
+            color: #000;
+            opacity: 0.04; /* Muy sutil en estado normal */
+            
             pointer-events: none;
             z-index: 0;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            transition: all 0.5s ease;
-            opacity: 0.1; /* Opacidad base sutil */
-        }
-        
-        .watermark-logo {
-            font-size: 10rem;
-            font-weight: 900;
-            color: #000;
-            opacity: 0.5;
-        }
-        
-        /* TRUCO DE FUSIÓN PARA IMÁGENES (Blending) */
-        .watermark-img {
-            height: 100%;
-            width: auto;
-            object-fit: contain;
-            
-            /* Estado Normal (Fondo Blanco): 
-               Multiply hace transparente el blanco de la imagen */
-            filter: grayscale(100%) contrast(1.2);
-            mix-blend-mode: multiply; 
             transition: all 0.4s ease;
+            
+            /* Evitar selección */
+            user-select: none;
+            letter-spacing: -0.05em;
         }
 
-        /* Watermark en Hover (Fondo Azul Oscuro) */
-        .list-row.is-hovered .watermark-container {
-            opacity: 0.25; /* Un poco más visible al pasar el mouse */
-            left: 0%; /* Pequeño movimiento */
-        }
-        
-        .list-row.is-hovered .watermark-logo {
-            color: white; /* Texto cambia a blanco */
+        /* Watermark en Hover */
+        .list-row.is-hovered .text-watermark {
+            color: white;
+            opacity: 0.15; /* Más visible sobre el color */
+            transform: translateX(10px) scale(1.02); /* Ligero movimiento */
         }
 
-        .list-row.is-hovered .watermark-img {
-            /* Truco para Hover Oscuro:
-               1. Invertimos colores (Fondo blanco -> Fondo negro)
-               2. Screen hace transparente el negro
-               Resultado: Logo blanco sin recuadro */
-            filter: grayscale(100%) invert(1) contrast(1.3);
-            mix-blend-mode: screen;
+        /* Responsive para el texto gigante */
+        @media (max-width: 640px) {
+            .text-watermark {
+                font-size: 4rem;
+                bottom: -0.5rem;
+            }
         }
 
         .row-content {
@@ -141,16 +123,19 @@
             border: 1px solid #dbeafe;
         }
 
-        /* BENEFIT BOX - Estático */
-        .list-row.is-hovered .benefit-box {
-            background: linear-gradient(to right, #f0fdf4, #ecfdf5) !important;
-            border-color: #bbf7d0 !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        /* BENEFIT BOX - Estilo sólido siempre */
+        .benefit-box {
+            background-color: #f0fdf4; /* green-50 */
+            border: 1px solid #bbf7d0; /* green-200 */
         }
-        /* Forzar colores internos del beneficio */
-        .list-row.is-hovered .benefit-box .benefit-title { color: #15803d !important; }
-        .list-row.is-hovered .benefit-box .benefit-value { color: #14532d !important; }
-        .list-row.is-hovered .benefit-box svg { color: #16a34a !important; }
+        .list-row.is-hovered .benefit-box {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            background: linear-gradient(to right, #f0fdf4, #ecfdf5);
+        }
+        /* Forzar colores internos del beneficio siempre */
+        .benefit-title { color: #15803d !important; }
+        .benefit-value { color: #14532d !important; }
+        .benefit-icon { color: #16a34a !important; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -417,13 +402,9 @@
         ];
 
 
-        // --- COMPONENTE AVATAR (Usado como watermark o pequeño) ---
-        const LogoAvatar = ({ name, url, isWatermark = false, onLoad }) => {
+        // --- COMPONENTE AVATAR ---
+        const LogoAvatar = ({ name, url, onLoad }) => {
           if (url) {
-            if (isWatermark) {
-                // Si es watermark, NO cargamos ColorThief aquí directamente para no saturar
-                return <img src={url} alt={name} className="watermark-img" crossOrigin="anonymous" />;
-            }
             return (
               <div className="w-12 h-12 rounded-full overflow-hidden shadow-sm shrink-0 border border-white bg-white flex items-center justify-center">
                 <img 
@@ -437,15 +418,10 @@
             );
           }
           
-          // Generar iniciales
           const initials = name
             ? name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
             : 'IC';
           
-          if (isWatermark) {
-              return <span className="watermark-logo">{initials}</span>;
-          }
-
           const getColor = (str) => {
             let hash = 0;
             const s = str || 'default';
@@ -466,31 +442,27 @@
           );
         };
 
-        // --- COMPONENTE DE FILA INDIVIDUAL (Para manejar su propio estado de color) ---
+        // --- COMPONENTE DE FILA INDIVIDUAL ---
         const CompanyRow = ({ empresa, index, handleEdit, handleDelete }) => {
             const [isHovered, setIsHovered] = useState(false);
             const [dominantColor, setDominantColor] = useState(null);
             const colorThiefRef = useRef(null);
 
-            // Inicializar ColorThief una vez
             useEffect(() => {
                 if (!colorThiefRef.current && window.ColorThief) {
                     colorThiefRef.current = new window.ColorThief();
                 }
             }, []);
 
-            // Handler cuando la imagen carga para extraer color
             const handleImageLoad = (imgElement) => {
                 try {
                     if (colorThiefRef.current) {
                         const color = colorThiefRef.current.getColor(imgElement);
-                        // Convertir a string rgb
                         const rgbColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
                         setDominantColor(rgbColor);
                     }
                 } catch (e) {
-                    console.log("No se pudo extraer color (CORS o error):", e);
-                    // Fallback: null (usará azul por defecto)
+                    console.log("No se pudo extraer color:", e);
                 }
             };
 
@@ -499,7 +471,7 @@
                 ? {
                     background: dominantColor 
                         ? `linear-gradient(135deg, ${dominantColor} 0%, rgba(0,0,0,0.8) 100%)`
-                        : 'linear-gradient(135deg, #00529b 0%, #002a50 100%)', // Azul Cervantes por defecto
+                        : 'linear-gradient(135deg, #00529b 0%, #002a50 100%)',
                     borderLeftColor: dominantColor || '#60a5fa'
                   }
                 : {};
@@ -511,9 +483,9 @@
                   onMouseEnter={() => setIsHovered(true)}
                   onMouseLeave={() => setIsHovered(false)}
                 >
-                  {/* MARCA DE AGUA */}
-                  <div className="watermark-container">
-                     <LogoAvatar name={empresa.entidad} url={empresa.logoUrl} isWatermark={true} />
+                  {/* WATERMARK DE TEXTO */}
+                  <div className="text-watermark">
+                     {empresa.entidad}
                   </div>
 
                   {/* CONTENIDO */}
@@ -524,7 +496,6 @@
                         <div className="hidden sm:flex font-mono text-slate-400 text-sm font-bold w-6 justify-center shrink-0 transition-colors">
                             #{index + 1}
                         </div>
-                        {/* Pasamos handleImageLoad al avatar pequeño para procesar la imagen real */}
                         <LogoAvatar 
                             name={empresa.entidad} 
                             url={empresa.logoUrl} 
@@ -549,11 +520,11 @@
 
                     {/* Beneficio y Acciones */}
                     <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-4 shrink-0 ml-auto">
-                        <div className="benefit-box bg-green-50 border border-green-100 rounded-lg px-3 py-2 flex items-center gap-2 shadow-sm transition-colors min-w-[180px]">
-                            <IconPercent className="h-4 w-4 text-green-600 shrink-0" />
+                        <div className="benefit-box rounded-lg px-3 py-2 flex items-center gap-2 shadow-sm transition-all min-w-[180px]">
+                            <IconPercent className="h-4 w-4 benefit-icon shrink-0" />
                             <div>
-                                <p className="benefit-title text-[9px] font-bold text-green-700 uppercase tracking-widest leading-none mb-0.5">Beneficio</p>
-                                <p className="benefit-value text-xs font-bold text-green-900 leading-tight">{empresa.beneficio_corto}</p>
+                                <p className="benefit-title text-[9px] font-bold uppercase tracking-widest leading-none mb-0.5">Beneficio</p>
+                                <p className="benefit-value text-xs font-bold leading-tight">{empresa.beneficio_corto}</p>
                             </div>
                         </div>
 
@@ -628,7 +599,6 @@
              setLoading(false);
           };
 
-          // --- BUSCADOR INTELIGENTE ---
           const filteredCompanies = useMemo(() => {
             if (!searchTerm) return companies;
             const lowerTerm = searchTerm.toLowerCase();
