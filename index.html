@@ -20,7 +20,7 @@
 
     <!-- Estilos -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
         .glass-panel {
@@ -41,7 +41,7 @@
             background: white;
             border-left: 4px solid transparent;
             position: relative;
-            overflow: hidden; /* CLAVE: Para recortar el texto gigante */
+            overflow: hidden; /* IMPORTANTE: Para recortar el texto gigante */
             transform-origin: center;
         }
 
@@ -50,7 +50,6 @@
             transform: scale(1.02);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
             z-index: 20;
-            /* El color de borde y fondo se aplican dinámicamente via JS */
         }
 
         /* Textos a Blanco en Hover */
@@ -76,17 +75,19 @@
         /* --- TYPOGRAPHY WATERMARK (TEXTO GIGANTE DE FONDO) --- */
         .text-watermark {
             position: absolute;
-            /* Posición para lograr el efecto "recortado" */
-            left: -1rem; 
-            bottom: -1.8rem; /* Cortamos la parte inferior de las letras */
+            left: -2%; 
+            bottom: -0.18em; /* Ajustado para recortar la base de las letras */
             
-            font-size: 7rem; /* Tamaño gigante */
-            font-weight: 900; /* Black weight */
-            line-height: 0.75; /* Apretado para efecto bloque */
+            font-size: 9rem; /* TAMAÑO MASIVO */
+            font-weight: 900; /* Extra Bold / Black */
+            line-height: 0.75; 
             white-space: nowrap;
+            text-transform: uppercase; /* Todo mayúsculas para uniformidad */
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.04em;
             
             color: #000;
-            opacity: 0.04; /* Muy sutil en estado normal */
+            opacity: 0.04; /* Casi invisible en modo normal */
             
             pointer-events: none;
             z-index: 0;
@@ -94,21 +95,20 @@
             
             /* Evitar selección */
             user-select: none;
-            letter-spacing: -0.05em;
         }
 
-        /* Watermark en Hover */
+        /* Watermark en Hover (Blanco sobre fondo de color) */
         .list-row.is-hovered .text-watermark {
             color: white;
-            opacity: 0.15; /* Más visible sobre el color */
-            transform: translateX(10px) scale(1.02); /* Ligero movimiento */
+            opacity: 0.12; /* Sutilmente visible */
+            left: 0%; /* Pequeño desplazamiento a la derecha */
         }
 
-        /* Responsive para el texto gigante */
-        @media (max-width: 640px) {
+        /* Responsive */
+        @media (max-width: 768px) {
             .text-watermark {
-                font-size: 4rem;
-                bottom: -0.5rem;
+                font-size: 5rem;
+                bottom: -0.15em;
             }
         }
 
@@ -123,13 +123,14 @@
             border: 1px solid #dbeafe;
         }
 
-        /* BENEFIT BOX - Estilo sólido siempre */
+        /* BENEFIT BOX */
         .benefit-box {
             background-color: #f0fdf4; /* green-50 */
             border: 1px solid #bbf7d0; /* green-200 */
         }
         .list-row.is-hovered .benefit-box {
             box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            /* Mantiene fondo claro para contraste */
             background: linear-gradient(to right, #f0fdf4, #ecfdf5);
         }
         /* Forzar colores internos del beneficio siempre */
@@ -402,7 +403,7 @@
         ];
 
 
-        // --- COMPONENTE AVATAR ---
+        // --- COMPONENTE AVATAR (Usado como watermark o pequeño) ---
         const LogoAvatar = ({ name, url, onLoad }) => {
           if (url) {
             return (
@@ -418,6 +419,7 @@
             );
           }
           
+          // Generar iniciales
           const initials = name
             ? name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
             : 'IC';
@@ -442,27 +444,31 @@
           );
         };
 
-        // --- COMPONENTE DE FILA INDIVIDUAL ---
+        // --- COMPONENTE DE FILA INDIVIDUAL (Para manejar su propio estado de color) ---
         const CompanyRow = ({ empresa, index, handleEdit, handleDelete }) => {
             const [isHovered, setIsHovered] = useState(false);
             const [dominantColor, setDominantColor] = useState(null);
             const colorThiefRef = useRef(null);
 
+            // Inicializar ColorThief una vez
             useEffect(() => {
                 if (!colorThiefRef.current && window.ColorThief) {
                     colorThiefRef.current = new window.ColorThief();
                 }
             }, []);
 
+            // Handler cuando la imagen carga para extraer color
             const handleImageLoad = (imgElement) => {
                 try {
                     if (colorThiefRef.current) {
                         const color = colorThiefRef.current.getColor(imgElement);
+                        // Convertir a string rgb
                         const rgbColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
                         setDominantColor(rgbColor);
                     }
                 } catch (e) {
-                    console.log("No se pudo extraer color:", e);
+                    console.log("No se pudo extraer color (CORS o error):", e);
+                    // Fallback: null (usará azul por defecto)
                 }
             };
 
@@ -471,7 +477,7 @@
                 ? {
                     background: dominantColor 
                         ? `linear-gradient(135deg, ${dominantColor} 0%, rgba(0,0,0,0.8) 100%)`
-                        : 'linear-gradient(135deg, #00529b 0%, #002a50 100%)',
+                        : 'linear-gradient(135deg, #00529b 0%, #002a50 100%)', // Azul Cervantes por defecto
                     borderLeftColor: dominantColor || '#60a5fa'
                   }
                 : {};
@@ -496,6 +502,7 @@
                         <div className="hidden sm:flex font-mono text-slate-400 text-sm font-bold w-6 justify-center shrink-0 transition-colors">
                             #{index + 1}
                         </div>
+                        {/* Pasamos handleImageLoad al avatar pequeño para procesar la imagen real */}
                         <LogoAvatar 
                             name={empresa.entidad} 
                             url={empresa.logoUrl} 
