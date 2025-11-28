@@ -8,6 +8,9 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Color Thief (Para extraer colores de los logos) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+    
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -41,7 +44,7 @@
             background: white;
             border-left: 4px solid transparent;
             position: relative;
-            overflow: hidden;
+            overflow: hidden; /* IMPORTANTE: Para recortar el texto gigante */
             transform-origin: center;
         }
 
@@ -50,6 +53,7 @@
             transform: scale(1.02);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
             z-index: 20;
+            /* El color de fondo se aplica dinámicamente según el logo */
         }
 
         /* Textos a Blanco en Hover */
@@ -76,16 +80,16 @@
         .text-watermark {
             position: absolute;
             left: -2%; 
-            bottom: -0.18em;
-            font-size: 9rem;
-            font-weight: 900;
+            bottom: -0.18em; /* Ajuste para recortar la base de las letras */
+            font-size: 9rem; /* TAMAÑO MASIVO */
+            font-weight: 900; /* Extra Bold / Black */
             line-height: 0.75; 
             white-space: nowrap;
             text-transform: uppercase;
             font-family: 'Inter', sans-serif;
             letter-spacing: -0.04em;
             color: #000;
-            opacity: 0.04;
+            opacity: 0.04; /* Muy sutil en estado normal */
             pointer-events: none;
             z-index: 0;
             transition: all 0.4s ease;
@@ -95,7 +99,7 @@
         /* Watermark en Hover */
         .list-row.is-hovered .text-watermark {
             color: white;
-            opacity: 0.12;
+            opacity: 0.12; /* Sutilmente visible en blanco */
             left: 0%;
         }
 
@@ -120,13 +124,15 @@
 
         /* BENEFIT BOX */
         .benefit-box {
-            background-color: #f0fdf4;
-            border: 1px solid #bbf7d0;
+            background-color: #f0fdf4; /* green-50 */
+            border: 1px solid #bbf7d0; /* green-200 */
         }
         .list-row.is-hovered .benefit-box {
             box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            /* Mantiene fondo claro para contraste */
             background: linear-gradient(to right, #f0fdf4, #ecfdf5);
         }
+        /* Forzar colores internos del beneficio siempre */
         .benefit-title { color: #15803d !important; }
         .benefit-value { color: #14532d !important; }
         .benefit-icon { color: #16a34a !important; }
@@ -180,11 +186,11 @@
 
         // --- DATOS INICIALES SEED (Acortado para visualización, contiene lógica original) ---
         const INITIAL_DATA_SEED = [
-          { entidad: "Konecta (Allus)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de Allus Córdoba y grupo familiar directo." },
-          { entidad: "Club Atlético Belgrano", categoria: "Club Deportivo", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Socios al día del Club." },
+          { entidad: "Konecta (Allus)", categoria: "Empresa Privada", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de Allus Córdoba y grupo familiar directo. Deben acreditar vinculación." },
+          { entidad: "Club Atlético Belgrano", categoria: "Club Deportivo", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Socios al día del Club. Deben presentar el carnet de socios al día o verificar su situación en la web del CAB." },
           // ... (Todos los datos originales se mantienen en la lógica de migración) ...
-          { entidad: "Gobierno de la Provincia de Córdoba", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de la Administración Pública Provincial." },
-          { entidad: "Cluster Córdoba Technology", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros del Cluster." }
+          { entidad: "Gobierno de la Provincia de Córdoba", categoria: "Gobierno", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros de la Administración Pública Provincial y su grupo familiar directo." },
+          { entidad: "Cluster Córdoba Technology", categoria: "Tecnología", beneficio_corto: "50% Matrícula / 20% Cuotas", descripcion: "Beneficiarios: Miembros del Cluster y grupo familiar directo. Deben acreditar vinculación." }
         ];
 
         // --- COMPONENTE AVATAR MEJORADO (SOLUCIÓN IMÁGENES ROTAS) ---
@@ -245,12 +251,12 @@
             const [isHovered, setIsHovered] = useState(false);
             const [dominantColor, setDominantColor] = useState(null);
             
-            // Estilo dinámico para el hover
+            // Estilo dinámico para el hover: Se pinta del color dominante
             const rowStyle = isHovered 
                 ? {
                     background: dominantColor 
                         ? `linear-gradient(135deg, ${dominantColor} 0%, rgba(0,0,0,0.8) 100%)`
-                        : 'linear-gradient(135deg, #00529b 0%, #002a50 100%)', // Azul Cervantes por defecto
+                        : 'linear-gradient(135deg, #00529b 0%, #002a50 100%)', // Azul Cervantes por defecto si no hay color
                     borderLeftColor: dominantColor || '#60a5fa'
                   }
                 : {};
